@@ -1,0 +1,275 @@
+openapi: 3.0.3
+
+info:
+  title: Banking System API
+  version: 1.0.0
+  description: API quản lý tài khoản ngân hàng
+
+servers:
+  - url: http://localhost:8080/api
+
+tags:
+  - name: User
+  - name: Account
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    RegisterRequest:
+      type: object
+      required:
+        - fullName
+        - email
+        - password
+      properties:
+        fullName:
+          type: string
+          example: Nguyen Van A
+        email:
+          type: string
+          format: email
+          example: nguyenvana@gmail.com
+        password:
+          type: string
+          example: 123456
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: nguyenvana@gmail.com
+        password:
+          type: string
+          example: 123456
+
+    UpdateBalanceRequest:
+      type: object
+      required:
+        - id
+        - amount
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        amount:
+          type: number
+          example: 500000
+
+    TransferRequest:
+      type: object
+      required:
+        - senderId
+        - recieverId
+        - amount
+      properties:
+        senderId:
+          type: string
+          format: uuid
+        recieverId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          example: 100000
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: Có lỗi xảy ra
+
+paths:
+
+  /users:
+    post:
+      tags:
+        - User
+      summary: Đăng ký tài khoản
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+
+      responses:
+        '201':
+          description: Đăng ký thành công
+        '400':
+          description: Dữ liệu không hợp lệ
+
+  /users/login:
+    post:
+      tags:
+        - User
+      summary: Đăng nhập
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+
+      responses:
+        '200':
+          description: Đăng nhập thành công
+        '401':
+          description: Sai tài khoản hoặc mật khẩu
+        '429':
+          description: Đăng nhập quá nhiều lần
+
+  /accounts:
+    post:
+      tags:
+        - Account
+      summary: Tạo tài khoản ngân hàng
+      security:
+        - bearerAuth: []
+
+      responses:
+        '201':
+          description: Tạo tài khoản thành công
+        '401':
+          description: Chưa xác thực
+        '403':
+          description: Không có quyền
+
+  /accounts/{id}/balance:
+    get:
+      tags:
+        - Account
+      summary: Lấy số dư tài khoản
+
+      security:
+        - bearerAuth: []
+
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+
+      responses:
+        '200':
+          description: Lấy số dư thành công
+        '404':
+          description: Không tìm thấy tài khoản
+
+  /accounts/deposit:
+    post:
+      tags:
+        - Account
+      summary: Nạp tiền
+
+      security:
+        - bearerAuth: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBalanceRequest'
+
+      responses:
+        '200':
+          description: Nạp tiền thành công
+        '400':
+          description: Dữ liệu không hợp lệ
+
+  /accounts/withdraw:
+    post:
+      tags:
+        - Account
+      summary: Rút tiền
+
+      security:
+        - bearerAuth: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBalanceRequest'
+
+      responses:
+        '200':
+          description: Rút tiền thành công
+        '400':
+          description: Dữ liệu không hợp lệ
+
+  /accounts/transfer:
+    post:
+      tags:
+        - Account
+      summary: Chuyển tiền
+
+      security:
+        - bearerAuth: []
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+
+      responses:
+        '200':
+          description: Chuyển tiền thành công
+        '400':
+          description: Dữ liệu không hợp lệ
+
+  /accounts/{id}/transactions:
+    get:
+      tags:
+        - Account
+      summary: Lấy danh sách giao dịch
+
+      security:
+        - bearerAuth: []
+
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 5
+
+      responses:
+        '200':
+          description: Lấy giao dịch thành công
+        '404':
+          description: Không tìm thấy tài khoản

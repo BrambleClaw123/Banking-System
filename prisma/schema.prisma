@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model Role {
+  id        Int     @id @default(autoincrement())
+  name      String  @unique
+  users     User[]
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  fullName  String
+  email     String    @unique
+  password  String    
+  accounts  Account[] 
+  createdAt DateTime  @default(now())
+  roleId    Int
+  role      Role      @relation(fields: [roleId], references: [id])
+}
+
+model Account {
+  id            String        @id @default(uuid()) 
+  balance       Float         @default(0)          
+  userId        Int
+  user          User          @relation(fields: [userId], references: [id])
+  sentTrans     Transaction[] @relation("Sender")
+  receivedTrans Transaction[] @relation("Receiver")
+  createdAt     DateTime      @default(now())
+}
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  amount      Float    
+  senderId    String   
+  receiverId  String   
+  message     String?  
+  createdAt   DateTime @default(now())
+
+  sender      Account  @relation("Sender", fields: [senderId], references: [id])
+  receiver    Account  @relation("Receiver", fields: [receiverId], references: [id])
+}
