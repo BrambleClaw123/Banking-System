@@ -2,9 +2,9 @@ const userService = require('../services/user.service');
 const catchAsync = require('../utils/catchAsync')
 
 const register = catchAsync(async (req, res) => {
-    const { fullName, email, password } = req.body;
+    const { fullName, email, password, role } = req.body;
 
-    const newUser = await userService.registerUser(fullName, email, password);
+    const newUser = await userService.registerUser(fullName, email, password, role);
 
     res.status(201).json({
         status: "Created",

@@ -9,6 +9,18 @@ const createAccount = async (userId) => {
     return newAccount
 };
 
+const findUserByAccountId = async (accountId) => {
+    const account = await prisma.account.findUnique({
+        where: {
+            id: accountId
+        },
+        select : {
+            user: true
+        }
+    })
+    return account?.user;
+}
+
 const findAccountById = async (accountId) => {
     const account = await prisma.account.findUnique({
         where : {
@@ -68,40 +80,40 @@ const decreaseBalance = async (accountId, amount) => {
     return result[0];
 }
 
-const transferMoney = async (senderId, recieverId, amount) => {
-    const senderUpdate = prisma.account.update({
-        where: {
-            id: senderId
-        },
-        data: {
-            balance: {
-                decrement: amount 
+const transferMoney = async (senderId, receiverId, amount) => {
+    return await prisma.$transaction(async (tx) => {
+        const senders = await tx.$queryRaw`SELECT balance FROM Account WHERE id = ${senderId} FOR UPDATE`;
+        if (!senders || senders.length === 0) {
+            throw new Error("Không tìm thấy tài khoản gửi.");
+        }
+        const senderBalance = senders[0].balance;
+        if (senderBalance < amount) {
+            throw new Error("Số dư không đủ để thực hiện giao dịch.");
+        }
+        const receiver = await tx.account.findUnique({
+            where: { id: receiverId }
+        });
+        if (!receiver) {
+            throw new Error("Không tìm thấy tài khoản nhận.");
+        }
+        await tx.account.update({
+            where: { id: senderId },
+            data: { balance: { decrement: amount } }
+        });
+        await tx.account.update({
+            where: { id: receiverId },
+            data: { balance: { increment: amount } }
+        });
+        const transactionLog = await tx.transaction.create({
+            data: {
+                amount: amount,
+                senderId: senderId,
+                receiverId: receiverId,
+                message: "Chuyển tiền"
             }
-        }
+        });
+        return transactionLog;
     });
-
-    const receiverUpdate = prisma.account.update({
-        where: {
-            id: recieverId
-        },
-        data: {
-            balance: {
-                increment: amount 
-            }
-        }
-    });
-
-    const transactionLog = prisma.transaction.create({
-        data: {
-            amount: amount,
-            senderId: senderId,
-            receiverId: recieverId,
-            message: "Chuyển tiền"
-        }
-    });
-
-    const result = await prisma.$transaction([senderUpdate, receiverUpdate, transactionLog]);
-    return result[2];
 }; 
 
 const getTransactionBySenderId = async (accountId, skip, take) => {
@@ -142,5 +154,6 @@ module.exports = {
     increaseBalance,
     decreaseBalance,
     transferMoney,
-    getTransactionBySenderId
+    getTransactionBySenderId,
+    findUserByAccountId
 }

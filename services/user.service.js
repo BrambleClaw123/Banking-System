@@ -2,7 +2,7 @@ require('dotenv').config();
 const userRepository = require('../repositories/user.repository');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const registerUser = async (fullName, email, password) => {
+const registerUser = async (fullName, email, password, role) => {
     const existingUser = await userRepository.findUserByEmail(email);
     if (existingUser) {
         throw new Error("Email này đã được sử dụng!");
@@ -11,10 +11,11 @@ const registerUser = async (fullName, email, password) => {
     const round = 10;
     const hashedPassword = await bcrypt.hash(password, round);
 
-    const newUser = await userRepository.createUser(fullName, email, hashedPassword, 3);
+    const newUser = await userRepository.createUser(fullName, email, hashedPassword, role);
 
     return newUser;
 };
+
 
 const loginUser = async (email, password) => {
     const user = await userRepository.findUserByEmail(email);

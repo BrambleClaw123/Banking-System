@@ -14,6 +14,12 @@ const registerSchema = Joi.object({
         'string.empty': 'Mật khẩu không được để trống',
         'string.min': 'Mật khẩu phải có ít nhất 6 ký tự',
         'any.required': 'Vui lòng cung cấp mật khẩu'
+    }),
+    role: Joi.number().integer().min(1).max(3).default(1).messages({
+            'number.base': 'Role phải là số',
+            'number.integer': 'Role phải là số nguyên',
+            'number.min': 'Role phải lớn hơn hoặc bằng 1 (1: Admin, 2: Staff, 3: User)',
+            'number.max': 'Role phải bé hơn hoặc bằng 3 (1: Admin, 2: Staff, 3: User)'
     })
 });
 
