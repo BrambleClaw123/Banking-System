@@ -31,54 +31,65 @@ const findAccountById = async (accountId) => {
 }
 
 const increaseBalance = async (accountId, amount) => {
-    const incrementBalance = prisma.account.update({
-        where : {
-            id: accountId
-        },
-        data: {
-            balance: {
-                increment: amount
+    return await prisma.$transaction(async (tx) => {
+        const accounts = await tx.$queryRaw`SELECT balance FROM Account WHERE id = ${accountId} FOR UPDATE`;
+        if (!accounts || accounts.length === 0) {
+            throw new Error("Không tìm thấy tài khoản.");
+        }
+        await tx.account.update({
+            where: {
+                id: accountId
+            },
+            data: {
+                balance: {
+                    increment: amount
+                }
             }
-        }
+        });
+        const transactionLog = await tx.transaction.create({
+            data: {
+                amount: amount,
+                senderId: accountId,
+                receiverId: accountId,
+                message: "Nạp tiền vào tài khoản"
+            }
+        });
+        return transactionLog;
     });
-
-    const transactionLog = prisma.transaction.create({
-        data: {
-            amount: amount,
-            senderId: accountId,
-            receiverId: accountId,
-            message: "Nạp tiền vào tài khoản"
-        }
-    });
-
-    const result = await prisma.$transaction([incrementBalance, transactionLog]);
-    return result[0];
-}
+};
 
 const decreaseBalance = async (accountId, amount) => {
-    const decrementBalance = prisma.account.update({
-        where : {
-            id: accountId
-        },
-        data: {
-            balance: {
-                decrement: amount
+    return await prisma.$transaction(async (tx) => {
+        const accounts = await tx.$queryRaw`SELECT balance FROM Account WHERE id = ${accountId} FOR UPDATE`;
+        if (!accounts || accounts.length === 0) {
+            throw new Error("Không tìm thấy tài khoản.");
+        }
+        const balance = accounts[0].balance;
+        if (balance < amount) {
+            throw new Error("Số dư không đủ để thực hiện giao dịch.");
+        }
+        await tx.account.update({
+            where: {
+                id: accountId
+            },
+            data: {
+                balance: {
+                    decrement: amount
+                }
             }
-        }
-    });
+        });
+        const transactionLog = await tx.transaction.create({
+            data: {
+                amount: amount,
+                senderId: accountId,
+                receiverId: accountId,
+                message: "Rút tiền khỏi tài khoản"
+            }
+        });
 
-    const transactionLog = prisma.transaction.create({
-        data: {
-            amount: amount,
-            senderId: accountId,
-            receiverId: accountId,
-            message: "Rút tiền khỏi tài khoản"
-        }
+        return transactionLog;
     });
-
-    const result = await prisma.$transaction([decrementBalance, transactionLog]);
-    return result[0];
-}
+};
 
 const transferMoney = async (senderId, receiverId, amount) => {
     return await prisma.$transaction(async (tx) => {
