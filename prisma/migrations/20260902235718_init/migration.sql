@@ -23,7 +23,7 @@ CREATE TABLE `User` (
 -- CreateTable
 CREATE TABLE `Account` (
     `id` VARCHAR(191) NOT NULL,
-    `balance` DOUBLE NOT NULL DEFAULT 0,
+    `balance` DECIMAL(65, 30) NOT NULL DEFAULT 0.0,
     `userId` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -33,7 +33,7 @@ CREATE TABLE `Account` (
 -- CreateTable
 CREATE TABLE `Transaction` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `amount` DOUBLE NOT NULL,
+    `amount` DECIMAL(65, 30) NOT NULL,
     `senderId` VARCHAR(191) NOT NULL,
     `receiverId` VARCHAR(191) NOT NULL,
     `message` VARCHAR(191) NULL,
